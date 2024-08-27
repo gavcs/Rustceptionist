@@ -5,9 +5,42 @@
     <title>chom</title>
   </head>
   <body>
-    <h1>Ur Dumb</h1>
-    <p>
-        The plan is to make some button to change text maybe idk, something to allow for the web server to use POST instead of just GET
-    </p>
+    <h1>
+      Unimplemented Stuff
+    </h1>
+    <p>Try entering something within the text box to change the line below here</p>
+    <div id="changediv">
+      <p>Ur Dumb</p>
+    </div>
+    <form method="POST" action="127.0.0.1:7878">
+      <input type="text" id="text" name="name" required minlength="4" maxlength="8" size="10" /> <button id="updateButton">update</button> <button id="POSTBUTTON">push update</button>
+    </form>
+    <script>
+      const button1 = document.getElementById('updateButton');
+      const button2 = document.getElementById('POSTBUTTON');
+      const content = document.getElementById('text');
+      const div = document.getElementById('changediv');
+
+      function localchange() {
+        div.innerHTML = '<p>' + content.value + '</p>';
+        content.innerHTML = '<input type="text" id="text" name="name" required minlength="4" maxlength="8" size="10" />';
+      }
+
+      function pushChange() {
+        if(div.innerHTML == ('<p>' + content.value + '</p>')) {
+          return;
+        } else {
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", '127.0.0.1:7878', true);
+          xhr.setRequestHeader('Content-Type', content.value);
+          xhr.send(JSON.stringify({
+              value: value
+          }));
+        }
+      }
+
+      button1.addEventListener('click', localchange);
+      button2.addEventListener('click', pushChange)
+    </script>
   </body>
 </html>
