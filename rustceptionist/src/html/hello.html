@@ -13,7 +13,7 @@
       <p>Ur Dumb</p>
     </div>
     <form method="POST" action="127.0.0.1:7878">
-      <input type="text" id="text" name="name" required minlength="4" maxlength="8" size="10" /> <button id="updateButton">update</button> <button id="POSTBUTTON">push update</button>
+      <input type="text" id="text" name="name" maxlength="20" size="10" /> <button id="updateButton">update</button> <button id="POSTBUTTON">push update</button>
     </form>
     <script>
       const button1 = document.getElementById('updateButton');
@@ -23,7 +23,7 @@
 
       function localchange() {
         div.innerHTML = '<p>' + content.value + '</p>';
-        content.innerHTML = '<input type="text" id="text" name="name" required minlength="4" maxlength="8" size="10" />';
+        content.innerHTML = '<input type="text" id="text" name="name" maxlength="20" size="10" />';
       }
 
       function pushChange() {

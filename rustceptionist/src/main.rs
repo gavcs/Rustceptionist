@@ -1,38 +1,76 @@
 use std::{
-    fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}, thread,
+    fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}, thread
 };
+
+#[derive(PartialEq)]
+enum Method {
+    GET,
+    POST,
+}
 
 //fn handle_get()
 
 fn handle(mut stream: TcpStream) {
     let buf = BufReader::new(&mut stream);
-    let req = buf.lines().next();
 
-    let request = match req {
-        Some(val) => val,
-        None => {
+    // get an iterator over the lines within the BufReader
+    let req: Vec<_> = buf.lines()
+        // map takes the Result<String, Error> from each line from lines and unwraps each of them
+        .map(|result| result.unwrap())
+        // take_while will check each line and grab each one until it finds an empty line
+        .take_while(|line| !line.is_empty())
+        // collect puts all of the lines within a vector
+        .collect();
+
+    println!("made vector");
+    
+    let m = match req.get(0) {
+        Some(val) => {
+            if &val.as_str()[0..4] == "POST" {
+                Method::POST
+            } else if &val.as_str()[0..3] == "GET" {
+                Method::GET
+            } else {
+                println!("AHHHH1");
+                println!("{val}");
+                return;
+            }
+        }
+        None =>  {
+            println!("AHHHH2");
+            return;
+        }
+    };
+    
+    let (status, fname) = match m {
+        Method::GET => {
+            let header = req.get(0);
+            match header {
+                Some(val) => {
+                    match val.as_str() {
+                        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "./src/html/hello.html"),
+                        "GET /secret HTTP/1.1" => ("HTTP/1.1 200 OK", "./src/html/secret.html"),
+                        _ => {
+                            println!("{val}");
+                            return;
+                        }
+                    }
+                }
+                None => {
+                    println!("AHHHH3");
+                    return;
+                }
+            }
+        }
+        Method::POST => {
+            for line in req {
+                println!("{line}");
+            }
             return;
         }
     };
 
-    let finreq = match request {
-        Ok(val) => val,
-        Err(e) => {
-            eprintln!("{e}");
-            return;
-        }
-    };
-
-    let (status, fname) = match &(finreq.as_str())[..] {
-        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "./src/html/hello.html"),
-        "GET /secret HTTP/1.1" => ("HTTP/1.1 200 OK", "./src/html/secret.html"),
-        _ => {
-            println!("{finreq}");
-            ("HTTP/1.1 404 NOT FOUND", "./src/html/404.html")
-        }
-    };
-
-    let content = fs::read_to_string("./src/html/hello.html");
+    let content = fs::read_to_string(fname);
     let content = match content {
         Ok(val) => val,
         Err(e) => {
@@ -42,7 +80,7 @@ fn handle(mut stream: TcpStream) {
     };
     let len = content.len();
 
-    let response = format!("HTTP/1.1 200 OK\r\nContent-Length: {len}\r\n\r\n{content}");
+    let response = format!("{status}\r\nContent-Length: {len}\r\n\r\n{content}");
 
     stream.write_all(response.as_bytes()).unwrap_or_else(|err| {
         eprintln!("{err}");
