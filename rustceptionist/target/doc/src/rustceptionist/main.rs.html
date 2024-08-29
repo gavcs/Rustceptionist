@@ -140,6 +140,11 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Rustceptionist is the web server that handles 3-4 html documents, implementing both the GET and POST (not currently functioning) HTTP methods.
 //! The root document is '/html/troll.html'. This document asks the user who requests the page for a password. If the correct password ("chom") is entered,
 //! the user will be redirected to another page. The entered password would be sent through a POST HTTP packet. The idea would be to change something within a
@@ -147,7 +152,7 @@
 //! is entered, they wold be redirected to '/html/updater.html'.
 
 </span><span class="kw">use </span>std::{
-    fs, io::{prelude::<span class="kw-2">*</span>, BufReader}, net::{TcpListener, TcpStream}, thread
+    fs, io, io::{prelude::<span class="kw-2">*</span>, BufReader}, net::{TcpListener, TcpStream}, thread, time::Duration
 };
 
 <span class="doccomment">/// Method currently has 2 possible values, GET and POST. Method represents the different HTML methods that are represented in this web server
@@ -158,15 +163,17 @@
 }
 
 
+<span class="doccomment">/// when the thread is spawned, it uses the handle function with the TcpStream that is used as a parameter. It will parse the header, determining the method of
+/// the HTTP packet and responding accordingly.
+</span><span class="kw">fn </span>handle(<span class="kw-2">mut </span>stream: TcpStream) {
+    <span class="comment">// create a BufReader from the stream
+    </span><span class="kw">let </span>buf = BufReader::new(<span class="kw-2">&amp;mut </span>stream);
 
-<span class="kw">fn </span>handle(<span class="kw-2">mut </span>stream: TcpStream) {
-    <span class="kw">let </span>buf = BufReader::new(<span class="kw-2">&amp;mut </span>stream);
-    <span class="comment">// map takes the Result&lt;String, Error&gt; from each line from lines and unwraps each of them
-
+    <span class="comment">// the lines() creates a Lines iterator, which is then mapped. This returns an iterator that can be collected
     </span><span class="kw">let </span><span class="kw-2">mut </span>lines = buf.lines().map(|result| result.unwrap());
 
     <span class="kw">let </span><span class="kw-2">mut </span>passlen = <span class="number">0</span>;
-    <span class="comment">// get an iterator over the lines within the BufReader
+    <span class="comment">// collect the header into a vector
     </span><span class="kw">let </span>req: Vec&lt;<span class="kw">_</span>&gt; = lines.by_ref()
         
         <span class="comment">// take_while will check each line and grab each one until it finds an empty line
@@ -180,80 +187,83 @@
         <span class="comment">// collect puts all of the lines within a vector
         </span>.collect();
 
-    <span class="macro">println!</span>(<span class="string">"made vector"</span>);
-    
-    <span class="kw">let </span>m = <span class="kw">match </span>req.get(<span class="number">0</span>) {
-        <span class="prelude-val">Some</span>(val) =&gt; {
-            <span class="kw">if </span><span class="kw-2">&amp;</span>val.as_str()[<span class="number">0</span>..<span class="number">4</span>] == <span class="string">"POST" </span>{
+    <span class="comment">// get the first line of the vector. This will contain the HTTP method
+    </span><span class="kw">let </span>m = <span class="kw">match </span>req.get(<span class="number">0</span>) {
+        
+        <span class="comment">// use the first word on the first line to determine the HTTP method and return the correct enum
+        </span><span class="prelude-val">Some</span>(val) =&gt; {
+            <span class="kw">if </span>val.len() &gt;= <span class="number">4 </span>&amp;&amp; <span class="kw-2">&amp;</span>val.as_str()[<span class="number">0</span>..<span class="number">4</span>] == <span class="string">"POST" </span>{
                 Method::POST
-            } <span class="kw">else if </span><span class="kw-2">&amp;</span>val.as_str()[<span class="number">0</span>..<span class="number">3</span>] == <span class="string">"GET" </span>{
-                Method::GET
+            } <span class="kw">else if </span>val.len() &gt;= <span class="number">3 </span>&amp;&amp; <span class="kw-2">&amp;</span>val.as_str()[<span class="number">0</span>..<span class="number">3</span>] == <span class="string">"GET" </span>{
+                    Method::GET
             } <span class="kw">else </span>{
-                <span class="macro">println!</span>(<span class="string">"AHHHH1"</span>);
-                <span class="macro">println!</span>(<span class="string">"{val}"</span>);
+                <span class="macro">eprintln!</span>(<span class="string">"Couldn't find method, first line = {val}"</span>);
                 <span class="kw">return</span>;
             }
         }
         <span class="prelude-val">None </span>=&gt;  {
-            <span class="macro">println!</span>(<span class="string">"AHHHH2"</span>);
+            <span class="macro">eprintln!</span>(<span class="string">"Couldn't find first line"</span>);
             <span class="kw">return</span>;
         }
     };
     
-    <span class="kw">let </span>(status, fname) = <span class="kw">match </span>m {
+    <span class="comment">// this creates a tuple with the status and filename as the parameters. The cases are determined by the Method enum
+    </span><span class="kw">let </span>(status, fname) = <span class="kw">match </span>m {
+
         Method::GET =&gt; {
-            <span class="kw">for </span>line <span class="kw">in </span><span class="kw-2">&amp;</span>req {
-                <span class="macro">println!</span>(<span class="string">"{line}"</span>);
-            }
-            <span class="kw">let </span>header = req.get(<span class="number">0</span>);
+            <span class="comment">// get the first line of the header and determine if the GET request is requesting a valid page
+            </span><span class="kw">let </span>header = req.get(<span class="number">0</span>);
             <span class="kw">match </span>header {
-                <span class="prelude-val">Some</span>(val) =&gt; {
+
+                <span class="comment">// if the file requested is valid, send the correct information, otherwise send the error page with the 404 NOT_FOUND code
+                </span><span class="prelude-val">Some</span>(val) =&gt; {
                     <span class="kw">match </span>val.as_str() {
                         <span class="string">"GET / HTTP/1.1" </span>=&gt; (<span class="string">"HTTP/1.1 200 OK"</span>, <span class="string">"./src/html/troll.html"</span>),
                         <span class="string">"GET /secret HTTP/1.1" </span>=&gt; (<span class="string">"HTTP/1.1 200 OK"</span>, <span class="string">"./src/html/secret.html"</span>),
                         <span class="kw">_ </span>=&gt; {
-                            <span class="macro">println!</span>(<span class="string">"{val}"</span>);
-                            <span class="kw">return</span>;
+                            (<span class="string">"HTTP/1.1 404 NOT_FOUND"</span>, <span class="string">"./src/html/404.html"</span>)
                         }
                     }
                 }
                 <span class="prelude-val">None </span>=&gt; {
-                    <span class="macro">println!</span>(<span class="string">"AHHHH3"</span>);
+                    <span class="macro">eprintln!</span>(<span class="string">"First line doesn't exist"</span>);
                     <span class="kw">return</span>;
                 }
             }
         }
-        Method::POST =&gt; {
-            <span class="comment">// for line in req {
-            //     println!("{line}");
-            // }
-            </span><span class="kw">for </span>line <span class="kw">in </span>lines {
-                <span class="macro">println!</span>(<span class="string">"{line}"</span>);
-            }
-            <span class="comment">// println!("\npword: {pword}");
-            // if pword == "chom" {
-            //     println!("\nchom");
-            // }
-            </span><span class="kw">return</span>;
-        }
-    };
-
-    <span class="kw">let </span>content = fs::read_to_string(fname);
-    <span class="kw">let </span>content = <span class="kw">match </span>content {
-        <span class="prelude-val">Ok</span>(val) =&gt; val,
-        <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">"{e}"</span>);
+        <span class="comment">// TODO: implement password and have POST work properly
+        </span>Method::POST =&gt; {
+            <span class="kw">let </span>pword = lines.next().unwrap();
+            <span class="macro">println!</span>(<span class="string">"word: {pword}"</span>);
+            io::stdout().flush().unwrap();
+            thread::sleep(Duration::from_secs(<span class="number">3</span>));
+            <span class="macro">println!</span>(<span class="string">"ahhhh"</span>);
             <span class="kw">return</span>;
         }
     };
-    <span class="kw">let </span>len = content.len();
 
-    <span class="kw">let </span>response = <span class="macro">format!</span>(<span class="string">"{status}\r\nContent-Length: {len}\r\n\r\n{content}"</span>);
+    <span class="comment">// put the entire contents of the file requested into a String (a Result&lt;String, Error&gt;)
+    </span><span class="kw">let </span>content = fs::read_to_string(fname);
+    <span class="kw">let </span>content = <span class="kw">match </span>content {
+        <span class="prelude-val">Ok</span>(val) =&gt; val,
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">eprintln!</span>(<span class="string">"Error: {e}"</span>);
+            <span class="kw">return</span>;
+        }
+    };
+    <span class="comment">// get the length of the content within the file
+    </span><span class="kw">let </span>len = content.len();
 
-    stream.write_all(response.as_bytes()).unwrap_or_else(|err| {
+    <span class="comment">// format the response to send back to the user
+    </span><span class="kw">let </span>response = <span class="macro">format!</span>(<span class="string">"{status}\r\nContent-Length: {len}\r\n\r\n{content}"</span>);
+
+    <span class="comment">// write the return packet to the stream to be given to the user
+    </span>stream.write_all(response.as_bytes()).unwrap_or_else(|err| {
         <span class="macro">eprintln!</span>(<span class="string">"{err}"</span>);
     });
-}
+
+    <span class="comment">// im so eepy
+</span>}
 
 
 <span class="kw">fn </span>main() {
@@ -275,7 +285,7 @@
         };
 
         <span class="comment">// the TcpStream is handled within a thread (TODO: use a ThreadPool)
-        </span><span class="kw">let </span>t = thread::spawn(|| {
+        </span>thread::spawn(|| {
             handle(unwrapped_stream);
         });
     }
