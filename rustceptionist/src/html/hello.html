@@ -1,3 +1,7 @@
+<!-- 
+  add a button that leads to another HTML document (ie. sends a GET request)
+-->
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,41 +10,11 @@
   </head>
   <body>
     <h1>
-      Unimplemented Stuff
+      Bridge Troll
     </h1>
-    <p>Try entering something within the text box to change the line below here</p>
-    <div id="changediv">
-      <p>Ur Dumb</p>
-    </div>
-    <form method="POST" action="127.0.0.1:7878">
-      <input type="text" id="text" name="name" maxlength="20" size="10" /> <button id="updateButton">update</button> <button id="POSTBUTTON">push update</button>
+    <p>"enter the secret password" -troll</p>
+    <form id="POST" method="POST" action="updater.html">
+      <input type="PASSWORD" id="text" name="PASSWORD" maxlength="20" size="10" /> <input type=submit id="POSTBUTTON"></input>
     </form>
-    <script>
-      const button1 = document.getElementById('updateButton');
-      const button2 = document.getElementById('POSTBUTTON');
-      const content = document.getElementById('text');
-      const div = document.getElementById('changediv');
-
-      function localchange() {
-        div.innerHTML = '<p>' + content.value + '</p>';
-        content.innerHTML = '<input type="text" id="text" name="name" maxlength="20" size="10" />';
-      }
-
-      function pushChange() {
-        if(div.innerHTML == ('<p>' + content.value + '</p>')) {
-          return;
-        } else {
-          var xhr = new XMLHttpRequest();
-          xhr.open("POST", '127.0.0.1:7878', true);
-          xhr.setRequestHeader('Content-Type', content.value);
-          xhr.send(JSON.stringify({
-              value: value
-          }));
-        }
-      }
-
-      button1.addEventListener('click', localchange);
-      button2.addEventListener('click', pushChange)
-    </script>
   </body>
 </html>

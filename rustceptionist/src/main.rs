@@ -8,17 +8,25 @@ enum Method {
     POST,
 }
 
-//fn handle_get()
+
 
 fn handle(mut stream: TcpStream) {
     let buf = BufReader::new(&mut stream);
 
+    // map takes the Result<String, Error> from each line from lines and unwraps each of them
+    let mut lines = buf.lines().map(|result| result.unwrap());
+
+    let mut passlen = 0;
     // get an iterator over the lines within the BufReader
-    let req: Vec<_> = buf.lines()
-        // map takes the Result<String, Error> from each line from lines and unwraps each of them
-        .map(|result| result.unwrap())
+    let req: Vec<_> = lines.by_ref()
+        
         // take_while will check each line and grab each one until it finds an empty line
-        .take_while(|line| !line.is_empty())
+        .take_while(|line| {
+            if line.contains("Content-Length") {
+                passlen = line[15..].parse().unwrap();
+            };
+            !line.is_empty()
+        })
         // collect puts all of the lines within a vector
         .collect();
 
@@ -44,6 +52,9 @@ fn handle(mut stream: TcpStream) {
     
     let (status, fname) = match m {
         Method::GET => {
+            for line in &req {
+                println!("{line}");
+            }
             let header = req.get(0);
             match header {
                 Some(val) => {
@@ -66,6 +77,7 @@ fn handle(mut stream: TcpStream) {
             for line in req {
                 println!("{line}");
             }
+            if &(lines.next().unwrap())[8..] == 
             return;
         }
     };
