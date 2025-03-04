@@ -1,6 +1,6 @@
 # *Rustceptionist*
 
-###This is a basic rust web server that will be expanded over time. As of now it currently implements the:
+### This is a basic rust web server that will be expanded over time. As of now it currently implements the:###
 * GET method
 
 The website itself needs to be developed more, which I'd like to do once I have a little extra time and no other more cybersecurity related projects.
