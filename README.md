@@ -1,4 +1,9 @@
-# rustceptionist
-This is a basic rust web server that will be expanded over time. It will handle HTTP requests for a future website that I plan to build over the next few months (as a try to force myself to learn HTML).
+# *Rustceptionist*
 
-This is not finished, and I plan to implement more over time. Currently it only handles GET requests, but I plan to add more and the goal is to have a fully functioning website by the end of this with the rustceptionist web server completely handling it.
+This is a basic rust web server that will be expanded over time. As of now it currently implements the:
+* GET method
+
+The website itself needs to be developed more, which I'd like to do once I have a little extra time and no other more cybersecurity related projects.
+
+**Ideas**
+* Another idea I have is to make this a web server for a C2. I've never worked with JavaScript or web assembly, so having this be the webserver for a C2 implant would be a lot more interesting.....
