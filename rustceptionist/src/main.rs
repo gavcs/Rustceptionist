@@ -29,7 +29,7 @@ fn handle(mut stream: TcpStream) {
     // collect the header into a vector
     let req: Vec<_> = lines.by_ref()
         
-        // take_while will check each line and grab each one until it finds an empty line
+        // take_while will check each lie and grab each one until it finds an empty line
         .take_while(|line| {
             if line.contains("Content-Length: ") {
                 dbg!(line);
