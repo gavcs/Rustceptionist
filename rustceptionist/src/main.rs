@@ -5,7 +5,10 @@
 //! is entered, they wold be redirected to '/html/updater.html'.
 
 use std::{
-    fs, io, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}, thread, time::Duration
+    fs,
+    io::{prelude::*, BufReader}, 
+    net::{TcpListener, TcpStream}, 
+    thread,
 };
 
 /// Method currently has 2 possible values, GET and POST. Method represents the different HTML methods that are represented in this web server
@@ -24,16 +27,18 @@ fn handle(mut stream: TcpStream) {
 
     // the lines() creates a Lines iterator, which is then mapped. This returns an iterator that can be collected
     let mut lines = buf.lines().map(|result| result.unwrap());
-
+    
     let mut passlen = 0;
     // collect the header into a vector
     let req: Vec<_> = lines.by_ref()
         
         // take_while will check each lie and grab each one until it finds an empty line
         .take_while(|line| {
+            print!("{}\n", line);
             if line.contains("Content-Length: ") {
                 dbg!(line);
-                passlen = line[17..].parse().unwrap();
+                passlen = line[16..].parse().unwrap();
+                print!("\t\tpasslen = {}\n", passlen);
             };
             !line.is_empty()
         })
@@ -45,6 +50,7 @@ fn handle(mut stream: TcpStream) {
         
         // use the first word on the first line to determine the HTTP method and return the correct enum
         Some(val) => {
+            print!("\n\tval: {}\n\t", val.get(0..4).unwrap());
             if val.len() >= 4 && &val.as_str()[0..4] == "POST" {
                 Method::POST
             } else if val.len() >= 3 && &val.as_str()[0..3] == "GET" {
@@ -64,6 +70,7 @@ fn handle(mut stream: TcpStream) {
     let (status, fname) = match m {
 
         Method::GET => {
+            print!("Method::GET\n");
             // get the first line of the header and determine if the GET request is requesting a valid page
             let header = req.get(0);
             match header {
@@ -86,14 +93,25 @@ fn handle(mut stream: TcpStream) {
         }
         // TODO: implement password and have POST work properly
         Method::POST => {
-            let pword = lines.next().unwrap();
-            println!("word: {pword}");
-            io::stdout().flush().unwrap();
-            thread::sleep(Duration::from_secs(3));
-            println!("ahhhh");
-            return;
+            let pword: String = loop {
+                let cur = lines.next();
+                match cur{
+                    Some(value) => {
+                        break value[9..].to_string()
+                    }
+                    None => {}
+                };
+            };
+            print!("{pword}");
+            if pword == "secret_password_123" {
+                ("HTTP/1.1 302 Found", "./src/html/secret.html")
+            } else {
+                ("HTTP/1.1 403 Forbidden", "./src/html/403.html")
+            }
         }
     };
+
+    print!("\tStatus: {status}\n\tfname: {fname}\n");
 
     // put the entire contents of the file requested into a String (a Result<String, Error>)
     let content = fs::read_to_string(fname);
@@ -108,7 +126,7 @@ fn handle(mut stream: TcpStream) {
     let len = content.len();
 
     // format the response to send back to the user
-    let response = format!("{status}\r\nContent-Length: {len}\r\n\r\n{content}");
+    let response = format!("{status}\r\nContent-Length: {len}\r\n\r\n{content}\r\n");
 
     // write the return packet to the stream to be given to the user
     stream.write_all(response.as_bytes()).unwrap_or_else(|err| {
@@ -118,12 +136,11 @@ fn handle(mut stream: TcpStream) {
     // im so eepy
 }
 
-
 fn main() {
 
     // establish a TcpListener that waits for requests
     //  Loopback address is the ip address and the port number is just "SEXY" using a phone numpad
-    let listen = TcpListener::bind("127.0.0.1:7399").unwrap();
+    let listen = TcpListener::bind("127.0.0.1:7443").unwrap();
 
     // listen.incoming grabs each of the incoming requests, so this grabs each of the incoming requests
     for stream in listen.incoming() {
